@@ -77,10 +77,14 @@ jobs:
           docker run --user "$(id -u):$(id -g)" -v "$PWD:/build" komelia-build-windows-x86_64
 
       - name: Copy JNI libs
-        run: ./gradlew windows-x86_64_copyJniLibs
+        # windows-x86_64_copyJniLibs uses a script closure
+        # (include { it.name in windowsLibs }) that the configuration
+        # cache cannot serialize under Gradle 9.x; disable it here
+        # instead of refactoring the build logic.
+        run: ./gradlew --no-configuration-cache windows-x86_64_copyJniLibs
 
       - name: Build Windows MSI
-        run: ./gradlew :desktopMsi
+        run: ./gradlew --no-configuration-cache :desktopMsi
 
       - name: Find MSI file
         id: find_msi
