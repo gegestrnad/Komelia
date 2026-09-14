@@ -135,6 +135,19 @@ val windowsLibs = setOf(
     "libkomelia_webview.dll",
 )
 
+// Fail loudly when an expected Windows DLL didn't make it into the staged
+// resources. Gradle Sync silently skips missing files, which previously
+// produced an MSI that crashed at startup with
+// "UnsatisfiedLinkError: no libpng16 in java.library.path".
+fun verifyStagedWindowsLibs(dir: String) {
+    val missing = windowsLibs.filter { !project.file("$dir/$it").exists() }
+    if (missing.isNotEmpty()) {
+        throw GradleException(
+            "Missing Windows native libs in $dir: ${missing.sorted().joinToString(", ")}"
+        )
+    }
+}
+
 interface Injected {
     @get:Inject
     val objectFactory: ObjectFactory
@@ -223,6 +236,8 @@ tasks.register<Sync>("windows-x86_64_copyJniLibs") {
     include("libgcc_s_seh-1.dll")
     include("libgomp-1.dll")
     into(resourcesDir)
+
+    doLast { verifyStagedWindowsLibs(resourcesDir) }
 }
 
 tasks.register<Sync>("windows-x86_64_copyJniLibsComposeResources") {
@@ -241,6 +256,14 @@ tasks.register<Sync>("windows-x86_64_copyJniLibsComposeResources") {
     include("libgcc_s_seh-1.dll")
     include("libgomp-1.dll")
     into("$composeDistroResourcesDir/windows")
+
+    doLast { verifyStagedWindowsLibs("$composeDistroResourcesDir/windows") }
+}
+
+tasks.register("verifyWindowsJniLibs") {
+    group = "komelia-build"
+    description = "Fail if any expected Windows DLL is missing from staged JNI resources"
+    doLast { verifyStagedWindowsLibs(resourcesDir) }
 }
 
 

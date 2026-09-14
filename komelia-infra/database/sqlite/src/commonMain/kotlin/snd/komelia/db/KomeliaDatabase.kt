@@ -3,6 +3,7 @@ package snd.komelia.db
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.exception.FlywayValidateException
 import org.jetbrains.exposed.v1.core.DatabaseConfig
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
@@ -73,12 +74,21 @@ class KomeliaDatabase(databaseDir: String) {
     }
 
     private fun flywayMigrate(datasource: DataSource, resourcesProvider: MigrationResourcesProvider) {
-        Flyway(
+        fun newFlyway() = Flyway(
             Flyway.configure()
                 .loggers("slf4j")
                 .dataSource(datasource)
                 .resourceProvider(resourcesProvider)
                 .javaMigrationClassProvider(resourcesProvider)
-        ).migrate()
+        )
+        try {
+            newFlyway().migrate()
+        } catch (e: FlywayValidateException) {
+            // Dev builds may have applied a migration whose SQL changed afterwards
+            // (e.g. unreleased V13 edited after first run). Align stored checksums,
+            // then retry once; genuine failures rethrow from the retry.
+            newFlyway().repair()
+            newFlyway().migrate()
+        }
     }
 }
