@@ -15,9 +15,14 @@ permissions:
   contents: write
 
 jobs:
-  build-windows-msi:
+  # Cross-compile the Windows native libs (MinGW/Docker) and stage the JNI
+  # DLLs into the source-tree resource dirs. Runs on Linux because the whole
+  # native toolchain (apt, mingw-w64, .sh scripts) assumes it.
+  build-windows-native:
     runs-on: ubuntu-latest
-    
+    outputs:
+      VERSION: ${{ steps.version.outputs.VERSION }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -81,17 +86,66 @@ jobs:
         # (include { it.name in windowsLibs }) that the configuration
         # cache cannot serialize under Gradle 9.x; disable it here
         # instead of refactoring the build logic.
+        # NOTE: runs here (not on Windows) because the task reads the
+        # MinGW sysroot and /usr/x86_64-w64-mingw32 paths.
         run: ./gradlew --no-configuration-cache windows-x86_64_copyJniLibs
 
+      - name: Upload staged JNI resources
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-jni-resources
+          path: komelia-infra/jni/src/jvmMain/resources/
+          retention-days: 1
+
+  # Package the MSI. MUST run on Windows: Compose's packageReleaseMsi needs
+  # the WiX toolset, so on Linux the task silently SKIPs and no MSI exists.
+  package-windows-msi:
+    needs: build-windows-native
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+
+      - name: Initialize Gradle submodules
+        # Only the Gradle composite/include builds are needed for packaging;
+        # the native C/C++ submodules were already consumed by the Linux job.
+        shell: bash
+        run: git submodule update --init third_party/secret-service third_party/ChipTextField third_party/compose-sonner
+
+      - name: Download staged JNI resources
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-jni-resources
+          path: komelia-infra/jni/src/jvmMain/resources/
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Build Windows MSI
-        run: ./gradlew --no-configuration-cache :desktopMsi
+        run: ./gradlew.bat --no-configuration-cache :desktopMsi
 
       - name: Find MSI file
         id: find_msi
+        shell: bash
         run: |
-          MSI_FILE=$(find komelia-app/desktopApp/build/compose/binaries -name "*.msi" -type f | head -n 1)
-          echo "MSI_FILE=$MSI_FILE" >> $GITHUB_OUTPUT
+          MSI_FILE=$(find komelia-app/desktopApp/build/compose -type f -iname "*.msi" -print -quit)
+          if [ -z "$MSI_FILE" ]; then
+            echo "ERROR: :desktopMsi produced no MSI file."
+            echo "--- msi/exe candidates ---"
+            find komelia-app/desktopApp/build -type f \( -iname "*.msi" -o -iname "*.exe" \) -print || true
+            echo "--- build tree (depth 5) ---"
+            find komelia-app/desktopApp/build -maxdepth 5 -type f | head -200 || true
+            exit 1
+          fi
           echo "Found MSI: $MSI_FILE"
+          echo "MSI_FILE=$MSI_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -105,6 +159,6 @@ jobs:
         if: "!startsWith(github.ref, 'refs/tags/')"
         uses: actions/upload-artifact@v4
         with:
-          name: komelia-windows-installer-${{ steps.version.outputs.VERSION }}
+          name: komelia-windows-installer-${{ needs.build-windows-native.outputs.VERSION }}
           path: ${{ steps.find_msi.outputs.MSI_FILE }}
           retention-days: 30
