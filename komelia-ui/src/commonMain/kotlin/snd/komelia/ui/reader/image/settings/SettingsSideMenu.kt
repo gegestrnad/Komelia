@@ -142,6 +142,7 @@ fun SettingsSideMenuOverlay(
     onBackPress: () -> Unit,
     onShowHelpMenu: () -> Unit,
 ) {
+    var showShortcutsDialog by remember { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxSize()) {
         Spacer(
             Modifier.fillMaxWidth()
@@ -177,7 +178,6 @@ fun SettingsSideMenuOverlay(
 
             HorizontalDivider(modifier = Modifier.padding(top = 10.dp))
             val zoomPercentage = remember(zoom) { (zoom * 100).roundToInt() }
-            var showShortcutsDialog by remember { mutableStateOf(false) }
             Text(stringResource(Res.string.reader_zoom, zoomPercentage))
 
             Column {
