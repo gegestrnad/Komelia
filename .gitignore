@@ -1,1 +1,72 @@
-Nothing should be ignored based on the provided file changes. The only modified file is a GitHub Actions workflow YAML file (`.github/workflows/build-windows-msi.yml`), which is a configuration file and should not be added to `.gitignore`.
+```
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.a
+*.lib
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.dSYM/
+*.dylib
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.tar.xz
+*.msi
+*.appx
+*.deb
+*.rpm
+
+# CMake build directories
+build/
+cmake-build-*/
+_CacheData/
+
+# Windows-specific
+*.tmp
+*.log
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+System Volume Information/
+
+# Dependencies
+node_modules/
+vendor/
+packages/
+
+# Environment files
+.env
+.env.local
+*.env
+*.env.*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Distribution artifacts
+dist/
+release/
+target/
+out/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+.DS_Store
+```
