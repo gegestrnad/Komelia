@@ -33,6 +33,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType.Companion.KeyDown
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import snd.komelia.ui.dialogs.AppDialog
 
@@ -134,7 +135,7 @@ fun ContinuousShortcutsDialog(
                                 onKeyCaptured = { capturedKey ->
                                     // Remove this key from any other action first
                                     val cleanedBindings = keyBindings.bindings.mapValues { (act, keys) ->
-                                        keys.filter { it != capturedKey.keyCode }
+                                        keys.filter { it != capturedKey.keyCode }.toSet()
                                     }
                                     val newBindings = ContinuousKeyBindings(
                                         bindings = cleanedBindings + (action to (cleanedBindings[action] ?: emptySet()) + capturedKey.keyCode)
@@ -200,9 +201,26 @@ private fun BoxWithKeyCapture(
 }
 
 private fun keyNameForKeyCode(keyCode: Long): String {
-    return try {
-        Key(keyCode.toInt()).keyLabel ?: "Key $keyCode"
-    } catch (e: Exception) {
-        "Key $keyCode"
+    // Compose has no public key-label API in this version (Key.keyLabel
+    // does not exist), so map the common keys explicitly.
+    return when (keyCode) {
+        Key.DirectionUp.keyCode -> "Up"
+        Key.DirectionDown.keyCode -> "Down"
+        Key.DirectionLeft.keyCode -> "Left"
+        Key.DirectionRight.keyCode -> "Right"
+        Key.PageUp.keyCode -> "Page Up"
+        Key.PageDown.keyCode -> "Page Down"
+        Key.MoveHome.keyCode -> "Home"
+        Key.MoveEnd.keyCode -> "End"
+        Key.Spacebar.keyCode -> "Space"
+        Key.Enter.keyCode -> "Enter"
+        Key.Tab.keyCode -> "Tab"
+        Key.Backspace.keyCode -> "Backspace"
+        Key.Escape.keyCode -> "Esc"
+        Key.W.keyCode -> "W"
+        Key.A.keyCode -> "A"
+        Key.S.keyCode -> "S"
+        Key.D.keyCode -> "D"
+        else -> "Key $keyCode"
     }
 }

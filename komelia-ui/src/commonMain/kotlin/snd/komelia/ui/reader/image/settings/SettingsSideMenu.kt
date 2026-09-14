@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -89,6 +90,7 @@ import snd.komelia.ui.platform.PlatformType
 import snd.komelia.ui.platform.cursorForHand
 import snd.komelia.ui.reader.image.continuous.ContinuousReaderState
 import snd.komelia.ui.reader.image.paged.PagedReaderState
+import snd.komelia.ui.reader.image.continuous.ContinuousShortcutsDialog
 import snd.komelia.ui.reader.image.panels.PanelsReaderState
 import snd.komelia.ui.settings.imagereader.onnxruntime.DeviceSelector
 import snd.komelia.ui.settings.imagereader.onnxruntime.OnnxRuntimeSettingsState
@@ -175,6 +177,7 @@ fun SettingsSideMenuOverlay(
 
             HorizontalDivider(modifier = Modifier.padding(top = 10.dp))
             val zoomPercentage = remember(zoom) { (zoom * 100).roundToInt() }
+            var showShortcutsDialog by remember { mutableStateOf(false) }
             Text(stringResource(Res.string.reader_zoom, zoomPercentage))
 
             Column {
@@ -346,6 +349,13 @@ fun SettingsSideMenuOverlay(
             }
 
             Spacer(Modifier.padding(bottom = 60.dp).navigationBarsPadding())
+        }
+        if (showShortcutsDialog) {
+            ContinuousShortcutsDialog(
+                keyBindings = continuousReaderState.keyBindings.collectAsState().value,
+                onKeyBindingsChange = continuousReaderState::onKeyBindingsChange,
+                onDismissRequest = { showShortcutsDialog = false }
+            )
         }
     }
 
