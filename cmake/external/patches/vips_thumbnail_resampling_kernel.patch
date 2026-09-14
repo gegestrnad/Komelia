@@ -1,17 +1,18 @@
 diff --git a/libvips/resample/thumbnail.c b/libvips/resample/thumbnail.c
-index 69eb7a20d..640a48af3 100644
+index 7c251a4dc..3a59ae886 100644
 --- a/libvips/resample/thumbnail.c
 +++ b/libvips/resample/thumbnail.c
-@@ -154,6 +154,7 @@ typedef struct _VipsThumbnail {
- 	/* Pyramids are stored in pages.
+@@ -157,6 +157,8 @@ typedef struct _VipsThumbnail {
  	 */
  	gboolean page_pyramid;
-+	VipsKernel kernel;
  
++	VipsKernel kernel;
++
  } VipsThumbnail;
  
-@@ -844,7 +845,7 @@ vips_thumbnail_build(VipsObject *object)
- 		in = t[4];
+ typedef struct _VipsThumbnailClass {
+@@ -895,7 +897,7 @@ vips_thumbnail_build(VipsObject *object)
+ 		in = t[3];
  	}
  
 -	if (vips_resize(in, &t[5], 1.0 / hshrink, "vscale", 1.0 / vshrink, NULL))
@@ -19,21 +20,21 @@ index 69eb7a20d..640a48af3 100644
  		return -1;
  	in = t[5];
  
-@@ -1157,6 +1158,13 @@ vips_thumbnail_class_init(VipsThumbnailClass *class)
- 		VIPS_ARGUMENT_OPTIONAL_INPUT | VIPS_ARGUMENT_DEPRECATED,
+@@ -1237,6 +1239,13 @@ vips_thumbnail_class_init(VipsThumbnailClass *class)
  		G_STRUCT_OFFSET(VipsThumbnail, output_profile),
  		NULL);
-+
+ 
 +	VIPS_ARG_ENUM(class, "kernel", 999,
 +		_("Kernel"),
 +		_("Resampling kernel"),
 +		VIPS_ARGUMENT_OPTIONAL_INPUT,
 +		G_STRUCT_OFFSET(VipsThumbnail, kernel),
 +		VIPS_TYPE_KERNEL, VIPS_KERNEL_LANCZOS3);
- }
- 
- static void
-@@ -1167,6 +1175,7 @@ vips_thumbnail_init(VipsThumbnail *thumbnail)
++
+ 	VIPS_ARG_ENUM(class, "intent", 122,
+ 		_("Intent"),
+ 		_("Rendering intent"),
+@@ -1291,6 +1300,7 @@ vips_thumbnail_init(VipsThumbnail *thumbnail)
  	thumbnail->auto_rotate = TRUE;
  	thumbnail->intent = VIPS_INTENT_RELATIVE;
  	thumbnail->fail_on = VIPS_FAIL_ON_NONE;
