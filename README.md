@@ -1,11 +1,23 @@
-# Komelia - Komga media client
+# Komelia - Komga media client (Windows-focused fork)
+
+> Fork of [Snd-R/Komelia](https://github.com/Snd-R/Komelia), targeting the **Windows desktop app** and the **Continuous reader**.
+> Upstream Android, Linux, and other reader types are untouched.
 
 ### Downloads:
 
-- Latest prebuilt release is available at https://github.com/Snd-R/Komelia/releases
+- Fork releases (Windows MSI): https://github.com/gegestrnad/Komelia/releases
+- Snapshot MSIs from manual builds: [Actions → Build Windows MSI Release → run artifacts](https://github.com/gegestrnad/Komelia/actions/workflows/build-windows-msi.yml) (kept 30 days)
+- Upstream downloads (all platforms): https://github.com/Snd-R/Komelia/releases
 - Google Play Store https://play.google.com/store/apps/details?id=io.github.snd_r.komelia
 - F-Droid https://f-droid.org/packages/io.github.snd_r.komelia/
 - AUR package https://aur.archlinux.org/packages/komelia
+
+## Fork changes (Continuous reader only)
+
+- **Configurable scroll step** — reader settings side menu, 10–2000 px (default 100, preserves upstream behavior).
+- **Rebindable scroll shortcuts** — "Configure" button in reader settings; bind multiple keys per scroll up/down action, persisted across restarts. Key capture: click "Add key", press the key (`Esc` cancels).
+- **Middle-click auto-scroll** — browser-style: middle-click toggles it, move the mouse to steer (speed follows distance), any click stops it.
+- Windows MSI is built by the `Build Windows MSI Release` workflow (native libs cross-compiled on Linux, packaging on Windows).
 
 ## Screenshots
 
@@ -45,7 +57,7 @@ You can help translate this project to your language by using service provided b
 
 ## Build instructions
 Make sure you download all git submodules\
-`git clone --recurse-submodules https://github.com/Snd-R/Komelia` \
+`git clone --recurse-submodules https://github.com/gegestrnad/Komelia` \
 if you already cloned repository without recurse command run\
 `git submodule update --init --recursive`
 
