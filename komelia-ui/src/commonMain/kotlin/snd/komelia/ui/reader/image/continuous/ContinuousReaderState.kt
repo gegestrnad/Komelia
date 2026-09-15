@@ -21,6 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelChildren
@@ -60,9 +61,14 @@ import snd.komelia.ui.reader.image.ReaderState
 import snd.komelia.ui.reader.image.ScreenScaleState
 import snd.komga.client.book.KomgaBookId
 import snd.komga.client.common.KomgaReadingDirection
+import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.math.sign
 
 private val logger = KotlinLogging.logger("ContinuousReaderState")
+
+private const val AUTO_SCROLL_DEADZONE_PX = 12f
+private const val AUTO_SCROLL_MAX_SPEED_PX_PER_FRAME = 48f
 
 class ContinuousReaderState(
     private val cleanupScope: CoroutineScope,
@@ -86,6 +92,9 @@ class ContinuousReaderState(
     val pageSpacing = MutableStateFlow(0)
     val scrollStep = MutableStateFlow(100f)
     val keyBindings = MutableStateFlow(ContinuousKeyBindings())
+    val autoScrollAnchor = MutableStateFlow<Offset?>(null)
+    private var autoScrollJob: Job? = null
+    private var autoScrollPointer: Offset = Offset.Zero
     val imageStretchToFit = readerState.imageStretchToFit.asStateFlow()
 
     val pageIntervals = MutableStateFlow<List<BookPagesInterval>>(emptyList())
@@ -368,6 +377,45 @@ class ContinuousReaderState(
                 screenScaleState.addPan(Offset(amount, 0f))
             }
         }
+    }
+
+    fun toggleAutoScroll(anchor: Offset) {
+        if (autoScrollAnchor.value != null) {
+            stopAutoScroll()
+            return
+        }
+        autoScrollAnchor.value = anchor
+        autoScrollPointer = anchor
+        autoScrollJob?.cancel()
+        autoScrollJob = stateScope.launch {
+            while (true) {
+                val anchorNow = autoScrollAnchor.value ?: break
+                val axisDistance = when (readingDirection.value) {
+                    TOP_TO_BOTTOM -> (autoScrollPointer - anchorNow).y
+                    else -> (autoScrollPointer - anchorNow).x
+                }
+                val speed = autoScrollSpeed(axisDistance)
+                if (speed != 0f) lazyListState.scrollBy(speed)
+                delay(16)
+            }
+        }
+    }
+
+    fun updateAutoScrollPosition(position: Offset) {
+        autoScrollPointer = position
+    }
+
+    fun stopAutoScroll() {
+        autoScrollJob?.cancel()
+        autoScrollJob = null
+        autoScrollAnchor.value = null
+    }
+
+    private fun autoScrollSpeed(distancePx: Float): Float {
+        val magnitude = abs(distancePx)
+        if (magnitude < AUTO_SCROLL_DEADZONE_PX) return 0f
+        val speed = (magnitude - AUTO_SCROLL_DEADZONE_PX) * 0.35f
+        return speed.coerceAtMost(AUTO_SCROLL_MAX_SPEED_PX_PER_FRAME) * sign(distancePx)
     }
 
     private fun getPagesFor(bookId: KomgaBookId): List<PageMetadata>? {

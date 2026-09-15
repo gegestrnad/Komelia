@@ -143,6 +143,7 @@ private fun ContinuousDialogContent(
         scrollDirection + mapOf(
             listOf("Home") to "First page",
             listOf("End") to "Last page",
+            listOf("Middle Click") to "Auto-scroll (move mouse to steer, any click to stop)",
             if (platform == PlatformType.WEB_KOMF) {
                 listOf("Shift", "Scroll Wheel") to "Zoom"
             } else {

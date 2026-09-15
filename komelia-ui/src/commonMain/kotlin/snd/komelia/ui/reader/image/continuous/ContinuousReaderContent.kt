@@ -73,7 +73,6 @@ fun BoxScope.ContinuousReaderContent(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val readingDirection = continuousReaderState.readingDirection.collectAsState().value
-    var showShortcutsDialog by remember { mutableStateOf(false) }
 
     val layoutDirection = remember(readingDirection) {
         when (readingDirection) {
@@ -90,17 +89,10 @@ fun BoxScope.ContinuousReaderContent(
         )
     }
 
-    if (showShortcutsDialog) {
-        ContinuousShortcutsDialog(
-            keyBindings = continuousReaderState.keyBindings.collectAsState().value,
-            onKeyBindingsChange = continuousReaderState::onKeyBindingsChange,
-            onDismissRequest = { showShortcutsDialog = false }
-        )
-    }
-
     val areaSize = screenScaleState.areaSize.collectAsState().value
     val scrollStep by continuousReaderState.scrollStep.collectAsState()
     val keyBindings by continuousReaderState.keyBindings.collectAsState()
+    val autoScrollAnchor by continuousReaderState.autoScrollAnchor.collectAsState()
     val keysState = remember(readingDirection, volumeKeysNavigation, scrollStep) {
         KeyMapState(
             readingDirection = readingDirection,
@@ -122,18 +114,20 @@ fun BoxScope.ContinuousReaderContent(
         isSettingsMenuOpen = showSettingsMenu,
         onSettingsMenuToggle = { onShowSettingsMenuChange(!showSettingsMenu) },
         modifier = Modifier.onKeyEvent { event ->
-            // Check rebindable shortcuts first
-            if (event.type == KeyDown) {
-                keyBindings.actionFor(event.key)?.let { action ->
-                    when (action) {
-                        ContinuousShortcutAction.SCROLL_UP -> {
-                            continuousReaderState.scrollBy(scrollStep)
-                            return@onKeyEvent true
-                        }
-                        ContinuousShortcutAction.SCROLL_DOWN -> {
-                            continuousReaderState.scrollBy(-scrollStep)
-                            return@onKeyEvent true
-                        }
+            // Rebindable scroll shortcuts first. They delegate to the same
+            // press/release handlers as the hardcoded arrows, so default bindings
+            // behave identically in every reading direction and custom keys get
+            // correct repeat/release semantics.
+            keyBindings.actionFor(event.key)?.let { action ->
+                when (event.type) {
+                    KeyDown -> return@onKeyEvent when (action) {
+                        ContinuousShortcutAction.SCROLL_UP -> keysState.onUpKeyDown()
+                        ContinuousShortcutAction.SCROLL_DOWN -> keysState.onDownKeyDown()
+                    }
+
+                    KeyUp -> return@onKeyEvent when (action) {
+                        ContinuousShortcutAction.SCROLL_UP -> keysState.onUpKeyUp()
+                        ContinuousShortcutAction.SCROLL_DOWN -> keysState.onDownKeyUp()
                     }
                 }
             }
@@ -173,10 +167,12 @@ fun BoxScope.ContinuousReaderContent(
 
             consumed
         }
+        .continuousAutoScrollInput(continuousReaderState)
     ) {
         ScalableContainer(continuousReaderState.screenScaleState) {
             ReaderPages(state = continuousReaderState)
         }
+        autoScrollAnchor?.let { AutoScrollIndicator(it) }
     }
 }
 
