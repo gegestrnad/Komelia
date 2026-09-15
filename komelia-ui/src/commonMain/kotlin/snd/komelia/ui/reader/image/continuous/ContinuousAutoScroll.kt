@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -39,7 +38,7 @@ fun Modifier.continuousAutoScrollInput(
                 val event = awaitPointerEvent(PointerEventPass.Initial)
                 if (event.type != PointerEventType.Press) continue
                 val position = event.changes.firstOrNull()?.position ?: continue
-                if (event.button == PointerButton.Tertiary) {
+                if (event.buttons.isTertiaryPressed) {
                     event.changes.forEach { it.consume() }
                     state.toggleAutoScroll(position)
                 } else if (state.autoScrollAnchor.value != null) {

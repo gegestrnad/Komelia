@@ -5,8 +5,8 @@
 
 ### Downloads:
 
-- Fork releases (Windows MSI): https://github.com/gegestrnad/Komelia/releases
-- Snapshot MSIs from manual builds: [Actions → Build Windows MSI Release → run artifacts](https://github.com/gegestrnad/Komelia/actions/workflows/build-windows-msi.yml) (kept 30 days)
+- Fork releases (Windows MSI): https://github.com/gegestrnad/Komelia/releases (`Continuous Windows build` pre-release always holds the latest manual build; versioned releases are cut from `v*` tags)
+- Snapshot MSIs from individual runs: [Actions → Build Windows MSI Release → run artifacts](https://github.com/gegestrnad/Komelia/actions/workflows/build-windows-msi.yml) (kept 30 days)
 - Upstream downloads (all platforms): https://github.com/Snd-R/Komelia/releases
 - Google Play Store https://play.google.com/store/apps/details?id=io.github.snd_r.komelia
 - F-Droid https://f-droid.org/packages/io.github.snd_r.komelia/

@@ -178,3 +178,29 @@ jobs:
           name: komelia-windows-installer-${{ needs.build-windows-native.outputs.VERSION }}
           path: ${{ steps.find_msi.outputs.MSI_FILE }}
           retention-days: 30
+
+      - name: Publish rolling pre-release (manual runs)
+        # Keeps https://github.com/<owner>/<repo>/releases populated: every
+        # manual run replaces the MSI on the single `continuous` pre-release,
+        # so there is always exactly one current installer to download.
+        # Tag pushes (v*) still get their own versioned releases via the step above.
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="continuous"
+          VERSION="${{ needs.build-windows-native.outputs.VERSION }}"
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "Continuous Windows build" \
+              --prerelease \
+              --notes "Latest successful manual build of the Windows MSI. Replaced on every workflow run."
+          fi
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --notes "Latest successful manual build of the Windows MSI (version \`$VERSION\`, commit \`${GITHUB_SHA::7}\`, built $(date -u +%Y-%m-%d)). Replaced on every workflow run."
+          ASSETS=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name')
+          for asset in $ASSETS; do
+            gh release delete-asset "$TAG" "$asset" --repo "$GITHUB_REPOSITORY" -y
+          done
+          gh release upload "$TAG" "${{ steps.find_msi.outputs.MSI_FILE }}" --repo "$GITHUB_REPOSITORY" --clobber
