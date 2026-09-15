@@ -131,11 +131,13 @@ private fun ContinuousDialogContent(
         Vertical -> mapOf(
             listOf("↑") to "Scroll up",
             listOf("↓") to "Scroll down",
+            listOf("←", "→") to "Previous/next screen",
         )
 
         Horizontal -> mapOf(
             listOf("←") to "Scroll left",
             listOf("→") to "Scroll right",
+            listOf("↑", "↓") to "Previous/next screen",
         )
     }
     KeyDescriptionColumn(
@@ -144,6 +146,8 @@ private fun ContinuousDialogContent(
             listOf("Home") to "First page",
             listOf("End") to "Last page",
             listOf("Middle Click") to "Auto-scroll (move mouse to steer, any click to stop)",
+            listOf("+", "-") to "Zoom in/out",
+            listOf("0") to "Reset zoom",
             if (platform == PlatformType.WEB_KOMF) {
                 listOf("Shift", "Scroll Wheel") to "Zoom"
             } else {

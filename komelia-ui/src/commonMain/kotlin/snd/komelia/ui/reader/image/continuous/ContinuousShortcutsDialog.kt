@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -59,101 +61,48 @@ fun ContinuousShortcutsDialog(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Configure Scroll Shortcuts", style = MaterialTheme.typography.titleLarge)
+                Text("Configure Shortcuts", style = MaterialTheme.typography.titleLarge)
                 Text(
                     "Click 'Add key' and press the desired key. Keys already bound to other actions will be reassigned.",
                     style = MaterialTheme.typography.bodyMedium
                 )
 
-                Spacer(Modifier.weight(1f))
-
-                ContinuousShortcutAction.entries.forEach { action ->
-                    val isCapturing = capturingForAction == action
-                    val boundKeys = keyBindings.bindings[action] ?: emptySet()
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = when (action) {
-                                ContinuousShortcutAction.SCROLL_UP -> "Scroll Up"
-                                ContinuousShortcutAction.SCROLL_DOWN -> "Scroll Down"
+                Column(
+                    modifier = Modifier.weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    ContinuousShortcutAction.entries.forEach { action ->
+                        ShortcutRow(
+                            action = action,
+                            keyBindings = keyBindings,
+                            isCapturing = capturingForAction == action,
+                            onAddKeyClick = { capturingForAction = action },
+                            onRemoveKey = { keyCode ->
+                                // Keep the (possibly empty) entry so an intentionally
+                                // unbound action is not resurrected from defaults on reload.
+                                val newBindings = keyBindings.copy(
+                                    bindings = keyBindings.bindings.mapValues { (act, keys) ->
+                                        if (act == action) keys - keyCode else keys
+                                    }
+                                )
+                                onKeyBindingsChange(newBindings)
                             },
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.weight(2f)
-                        ) {
-                            boundKeys.forEach { keyCode ->
-                                val keyName = keyNameForKeyCode(keyCode)
-                                Card(
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                                    ),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(keyName, style = MaterialTheme.typography.labelMedium)
-                                        IconButton(
-                                            onClick = {
-                                                val newBindings = keyBindings.copy(
-                                                    bindings = keyBindings.bindings.mapValues { (act, keys) ->
-                                                        if (act == action) keys - keyCode else keys
-                                                    }.filterValues { it.isNotEmpty() }
-                                                )
-                                                onKeyBindingsChange(newBindings)
-                                            },
-                                            modifier = Modifier.size(16.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Close,
-                                                contentDescription = "Remove",
-                                                modifier = Modifier.size(12.dp)
-                                            )
-                                        }
-                                    }
+                            onKeyCaptured = { capturedKey ->
+                                // Remove this key from any other action first
+                                val cleanedBindings = keyBindings.bindings.mapValues { (act, keys) ->
+                                    keys.filter { it != capturedKey.keyCode }.toSet()
                                 }
-                            }
-                        }
-
-                        Button(
-                            onClick = { capturingForAction = action },
-                            enabled = !isCapturing
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(if (boundKeys.isEmpty()) "Add key" else "Add another")
-                        }
-
-                        if (isCapturing) {
-                            // Invisible capture box
-                            BoxWithKeyCapture(
-                                onKeyCaptured = { capturedKey ->
-                                    // Remove this key from any other action first
-                                    val cleanedBindings = keyBindings.bindings.mapValues { (act, keys) ->
-                                        keys.filter { it != capturedKey.keyCode }.toSet()
-                                    }
-                                    val newBindings = ContinuousKeyBindings(
-                                        bindings = cleanedBindings + (action to (cleanedBindings[action] ?: emptySet()) + capturedKey.keyCode)
-                                    )
-                                    onKeyBindingsChange(newBindings)
-                                    capturingForAction = null
-                                },
-                                onCancel = { capturingForAction = null }
-                            )
-                        }
+                                val newBindings = ContinuousKeyBindings(
+                                    bindings = cleanedBindings + (action to (cleanedBindings[action] ?: emptySet()) + capturedKey.keyCode)
+                                )
+                                onKeyBindingsChange(newBindings)
+                                capturingForAction = null
+                            },
+                            onCaptureCancel = { capturingForAction = null },
+                        )
                     }
                 }
-
-                Spacer(Modifier.weight(1f))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -172,6 +121,95 @@ fun ContinuousShortcutsDialog(
             }
         }
     )
+}
+
+@Composable
+private fun ShortcutRow(
+    action: ContinuousShortcutAction,
+    keyBindings: ContinuousKeyBindings,
+    isCapturing: Boolean,
+    onAddKeyClick: () -> Unit,
+    onRemoveKey: (Long) -> Unit,
+    onKeyCaptured: (Key) -> Unit,
+    onCaptureCancel: () -> Unit,
+) {
+    val boundKeys = keyBindings.bindings[action] ?: emptySet()
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = actionLabel(action),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge
+        )
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.weight(2f)
+        ) {
+            boundKeys.forEach { keyCode ->
+                val keyName = keyNameForKeyCode(keyCode)
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(keyName, style = MaterialTheme.typography.labelMedium)
+                        IconButton(
+                            onClick = { onRemoveKey(keyCode) },
+                            modifier = Modifier.size(16.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Remove",
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Button(
+            onClick = onAddKeyClick,
+            enabled = !isCapturing
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(if (boundKeys.isEmpty()) "Add key" else "Add another")
+        }
+
+        if (isCapturing) {
+            // Invisible capture box
+            BoxWithKeyCapture(
+                onKeyCaptured = onKeyCaptured,
+                onCancel = onCaptureCancel
+            )
+        }
+    }
+}
+
+private fun actionLabel(action: ContinuousShortcutAction): String = when (action) {
+    ContinuousShortcutAction.SCROLL_UP -> "Scroll Up"
+    ContinuousShortcutAction.SCROLL_DOWN -> "Scroll Down"
+    ContinuousShortcutAction.SCROLL_LEFT -> "Scroll Left"
+    ContinuousShortcutAction.SCROLL_RIGHT -> "Scroll Right"
+    ContinuousShortcutAction.FIRST_PAGE -> "First Page"
+    ContinuousShortcutAction.LAST_PAGE -> "Last Page"
+    ContinuousShortcutAction.READING_DIRECTION_TOP_TO_BOTTOM -> "Reading Direction: Top to Bottom"
+    ContinuousShortcutAction.READING_DIRECTION_LEFT_TO_RIGHT -> "Reading Direction: Left to Right"
+    ContinuousShortcutAction.READING_DIRECTION_RIGHT_TO_LEFT -> "Reading Direction: Right to Left"
+    ContinuousShortcutAction.ZOOM_IN -> "Zoom In"
+    ContinuousShortcutAction.ZOOM_OUT -> "Zoom Out"
+    ContinuousShortcutAction.ZOOM_RESET -> "Reset Zoom"
 }
 
 @Composable
@@ -229,6 +267,13 @@ private fun keyNameForKeyCode(keyCode: Long): String {
         Key.Tab.keyCode -> "Tab"
         Key.Backspace.keyCode -> "Backspace"
         Key.Escape.keyCode -> "Esc"
+        Key.Plus.keyCode -> "+"
+        Key.Equals.keyCode -> "="
+        Key.Minus.keyCode -> "-"
+        Key.Zero.keyCode -> "0"
+        Key.V.keyCode -> "V"
+        Key.L.keyCode -> "L"
+        Key.R.keyCode -> "R"
         Key.W.keyCode -> "W"
         Key.A.keyCode -> "A"
         Key.S.keyCode -> "S"

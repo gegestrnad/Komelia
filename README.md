@@ -15,7 +15,7 @@
 ## Fork changes (Continuous reader only)
 
 - **Configurable scroll step** — reader settings side menu, 10–2000 px (default 100, preserves upstream behavior).
-- **Rebindable scroll shortcuts** — "Configure" button in reader settings; bind multiple keys per scroll up/down action, persisted across restarts. Key capture: click "Add key", press the key (`Esc` cancels).
+- **Rebindable shortcuts** — "Configure" button in reader settings; every Continuous-reader action is rebindable (scroll up/down/left/right, first/last page, the three reading directions, zoom in/out/reset), multiple keys per action, persisted across restarts. Defaults match upstream keys plus `+`/`=`/`-` zoom in/out and `0` reset zoom. Key capture: click "Add key", press the key (`Esc` cancels).
 - **Middle-click auto-scroll** — browser-style: middle-click toggles it, move the mouse to steer (speed follows distance), any click stops it.
 - Windows MSI is built by the `Build Windows MSI Release` workflow (native libs cross-compiled on Linux, packaging on Windows).
 

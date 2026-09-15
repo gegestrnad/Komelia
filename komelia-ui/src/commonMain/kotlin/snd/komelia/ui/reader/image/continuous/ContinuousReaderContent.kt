@@ -114,33 +114,62 @@ fun BoxScope.ContinuousReaderContent(
         isSettingsMenuOpen = showSettingsMenu,
         onSettingsMenuToggle = { onShowSettingsMenuChange(!showSettingsMenu) },
         modifier = Modifier.onKeyEvent { event ->
-            // Rebindable scroll shortcuts first. They delegate to the same
-            // press/release handlers as the hardcoded arrows, so default bindings
+            // Configurable shortcuts first. They delegate to the same
+            // press/release handlers as the old hardcoded arrows, so default bindings
             // behave identically in every reading direction and custom keys get
             // correct repeat/release semantics.
+            // (Alt+Left is deliberately NOT consumed on release so the top-level
+            // handler can still exit to the series screen.)
             keyBindings.actionFor(event.key)?.let { action ->
                 when (event.type) {
                     KeyDown -> return@onKeyEvent when (action) {
                         ContinuousShortcutAction.SCROLL_UP -> keysState.onUpKeyDown()
                         ContinuousShortcutAction.SCROLL_DOWN -> keysState.onDownKeyDown()
+                        ContinuousShortcutAction.SCROLL_LEFT -> keysState.onLeftKeyDown()
+                        ContinuousShortcutAction.SCROLL_RIGHT -> keysState.onRightKeyDown()
+                        ContinuousShortcutAction.FIRST_PAGE -> keysState.onScrollToFirstPage()
+                        ContinuousShortcutAction.LAST_PAGE -> keysState.onScrollToLastPage()
+                        ContinuousShortcutAction.READING_DIRECTION_TOP_TO_BOTTOM ->
+                            keysState.onReadingDirectionChange(TOP_TO_BOTTOM)
+
+                        ContinuousShortcutAction.READING_DIRECTION_LEFT_TO_RIGHT ->
+                            keysState.onReadingDirectionChange(LEFT_TO_RIGHT)
+
+                        ContinuousShortcutAction.READING_DIRECTION_RIGHT_TO_LEFT ->
+                            keysState.onReadingDirectionChange(RIGHT_TO_LEFT)
+
+                        ContinuousShortcutAction.ZOOM_IN -> {
+                            screenScaleState.multiplyZoom(1.25f)
+                            true
+                        }
+
+                        ContinuousShortcutAction.ZOOM_OUT -> {
+                            screenScaleState.multiplyZoom(0.8f)
+                            true
+                        }
+
+                        ContinuousShortcutAction.ZOOM_RESET -> {
+                            screenScaleState.setZoom(1f)
+                            true
+                        }
                     }
 
                     KeyUp -> return@onKeyEvent when (action) {
                         ContinuousShortcutAction.SCROLL_UP -> keysState.onUpKeyUp()
                         ContinuousShortcutAction.SCROLL_DOWN -> keysState.onDownKeyUp()
+                        ContinuousShortcutAction.SCROLL_LEFT -> keysState.onLeftKeyUp(event.isAltPressed)
+                        ContinuousShortcutAction.SCROLL_RIGHT -> keysState.onRightKeyUp()
+                        else -> true
                     }
+
+                    else -> return@onKeyEvent false
                 }
             }
 
-            var consumed = true
-
+            // Volume keys are not rebindable; they only navigate when the option is enabled.
             when (event.type) {
                 KeyDown -> {
-                    consumed = when (event.key) {
-                        Key.DirectionLeft -> keysState.onLeftKeyDown()
-                        Key.DirectionRight -> keysState.onRightKeyDown()
-                        Key.DirectionDown -> keysState.onDownKeyDown()
-                        Key.DirectionUp -> keysState.onUpKeyDown()
+                    when (event.key) {
                         Key.VolumeUp -> keysState.onVolumeUpKeyDown()
                         Key.VolumeDown -> keysState.onVolumeDownKeyDown()
                         else -> false
@@ -148,24 +177,15 @@ fun BoxScope.ContinuousReaderContent(
                 }
 
                 KeyUp -> {
-                    consumed = when (event.key) {
-                        Key.MoveHome -> keysState.onScrollToFirstPage()
-                        Key.MoveEnd -> keysState.onScrollToLastPage()
-                        Key.V -> keysState.onReadingDirectionChange(TOP_TO_BOTTOM)
-                        Key.L -> keysState.onReadingDirectionChange(LEFT_TO_RIGHT)
-                        Key.R -> keysState.onReadingDirectionChange(RIGHT_TO_LEFT)
-                        Key.DirectionDown -> keysState.onDownKeyUp()
-                        Key.DirectionUp -> keysState.onUpKeyUp()
-                        Key.DirectionRight -> keysState.onRightKeyUp()
-                        Key.DirectionLeft -> keysState.onLeftKeyUp(event.isAltPressed)
+                    when (event.key) {
                         Key.VolumeUp -> keysState.onVolumeUpKeyUp()
                         Key.VolumeDown -> keysState.onVolumeDownKeyUp()
                         else -> false
                     }
                 }
-            }
 
-            consumed
+                else -> false
+            }
         }
         .continuousAutoScrollInput(continuousReaderState)
     ) {
