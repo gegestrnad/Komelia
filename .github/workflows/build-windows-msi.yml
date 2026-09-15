@@ -81,6 +81,17 @@ jobs:
           docker build -t komelia-build-windows-x86_64 . -f ./cmake/windows-x86_64.Dockerfile
           docker run --user "$(id -u):$(id -g)" -v "$PWD:/build" komelia-build-windows-x86_64
 
+      - name: Diagnose Windows native libs
+        # Prints what the MinGW superbuild actually staged, so a future
+        # submodule ABI bump (e.g. libpng16 -> libpng18) shows up here
+        # instead of surfacing only as "Missing Windows native libs".
+        run: |
+          echo "=== sysroot/bin ==="
+          ls -la "$GITHUB_WORKSPACE/cmake/build-w64/sysroot/bin/" || true
+          echo
+          echo "=== libpng artifacts ==="
+          find "$GITHUB_WORKSPACE/cmake/build-w64" -iname '*png*' -print 2>/dev/null | sort || true
+
       - name: Copy JNI libs
         # windows-x86_64_copyJniLibs uses a script closure
         # (include { it.name in windowsLibs }) that the configuration

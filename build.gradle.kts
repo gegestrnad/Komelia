@@ -115,7 +115,7 @@ val windowsLibs = setOf(
     "libjxl_cms.dll",
     "libjxl_threads.dll",
     "libsharpyuv.dll",
-    "libpng16.dll",
+    "libpng18.dll",
     "libtiff-6.dll",
     "libvips-42.dll",
     "libwebp.dll",
@@ -138,7 +138,7 @@ val windowsLibs = setOf(
 // Fail loudly when an expected Windows DLL didn't make it into the staged
 // resources. Gradle Sync silently skips missing files, which previously
 // produced an MSI that crashed at startup with
-// "UnsatisfiedLinkError: no libpng16 in java.library.path".
+// "UnsatisfiedLinkError: no libpng18 in java.library.path".
 fun verifyStagedWindowsLibs(dir: String) {
     val missing = windowsLibs.filter { !project.file("$dir/$it").exists() }
     if (missing.isNotEmpty()) {

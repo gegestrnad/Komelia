@@ -90,7 +90,7 @@ object VipsSharedLibraries {
         "libjxl_cms",
         "libjxl_threads",
         "libjxl",
-        "libpng16",
+        "libpng18",
         "libtiff-6",
         "libheif",
         windowsBundledLibVipsName,
