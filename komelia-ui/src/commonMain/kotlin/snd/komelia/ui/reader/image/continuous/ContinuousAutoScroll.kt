@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -29,6 +31,7 @@ import kotlin.math.roundToInt
  * The middle press is observed (and consumed) in the Initial pass so the reader's
  * tap-to-navigate gestures never see it.
  */
+@OptIn(ExperimentalComposeUiApi::class)
 fun Modifier.continuousAutoScrollInput(
     state: ContinuousReaderState,
 ): Modifier = this
@@ -38,7 +41,7 @@ fun Modifier.continuousAutoScrollInput(
                 val event = awaitPointerEvent(PointerEventPass.Initial)
                 if (event.type != PointerEventType.Press) continue
                 val position = event.changes.firstOrNull()?.position ?: continue
-                if (event.buttons.isTertiaryPressed) {
+                if (event.button == PointerButton.Tertiary) {
                     event.changes.forEach { it.consume() }
                     state.toggleAutoScroll(position)
                 } else if (state.autoScrollAnchor.value != null) {
