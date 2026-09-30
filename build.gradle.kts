@@ -272,6 +272,7 @@ tasks.register<Exec>("komgaNpmInstall") {
     workingDir(epubReaderKomga)
     inputs.file("$epubReaderKomga/package.json")
     outputs.dir("$epubReaderKomga/node_modules")
+    environment("NPM_CONFIG_ALLOW_GIT", "all")
     commandLine(
         if (Os.isFamily(Os.FAMILY_WINDOWS)) {
             "npm.cmd"
@@ -458,16 +459,20 @@ tasks.register<DefaultTask>("komfWebUI") {
         "${project.layout.buildDirectory.get()}/komf-webui/composeResources/io.github.snd_r.komelia.ui.komelia_ui.generated.resources/files"
     val outputResourcesValues =
         "${project.layout.buildDirectory.get()}/komf-webui/composeResources/io.github.snd_r.komelia.ui.komelia_ui.generated.resources/values"
+    val outputResourcesDrawables =
+        "${project.layout.buildDirectory.get()}/komf-webui/composeResources/io.github.snd_r.komelia.ui.komelia_ui.generated.resources/drawable"
     delete(output)
     mkdir(output)
     mkdir(outputResourcesFiles)
     mkdir(outputResourcesValues)
+    mkdir(outputResourcesDrawables)
     inputs.dir(appInput)
     inputs.dir(appResourcesInput)
     inputs.dir(webWorkerInput)
     outputs.dir(output)
     outputs.dir(outputResourcesFiles)
     outputs.dir(outputResourcesValues)
+    outputs.dir(outputResourcesDrawables)
     val injected = project.objects.newInstance<Injected>()
 
     doLast {
@@ -515,6 +520,10 @@ tasks.register<DefaultTask>("komfWebUI") {
                 include("*.cvr")
             },
             "$output/composeResources/io.github.snd_r.komelia.ui.komelia_ui.generated.resources/values"
+        )
+        gzipFiles(
+            injected.objectFactory.fileTree().from("$appResourcesInput/drawable"),
+            "$output/composeResources/io.github.snd_r.komelia.ui.komelia_ui.generated.resources/drawable"
         )
     }
 }
