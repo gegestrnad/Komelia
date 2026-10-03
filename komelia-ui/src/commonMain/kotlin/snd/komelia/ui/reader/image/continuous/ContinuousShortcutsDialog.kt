@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -67,11 +65,11 @@ fun ContinuousShortcutsDialog(
                     style = MaterialTheme.typography.bodyMedium
                 )
 
-                Column(
-                    modifier = Modifier.weight(1f, fill = false)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+                // AppDialog wraps `content` in a vertically scrollable Box, so this Column is
+                // measured with infinite height. Modifier.weight resolves against Infinity here and
+                // collapsed the list to zero height, hiding every row and its "Add key" button, so
+                // the list stays unweighted and relies on the dialog's own scroll.
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     ContinuousShortcutAction.entries.forEach { action ->
                         ShortcutRow(
                             action = action,
@@ -178,21 +176,19 @@ private fun ShortcutRow(
             }
         }
 
-        Button(
-            onClick = onAddKeyClick,
-            enabled = !isCapturing
-        ) {
-            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(4.dp))
-            Text(if (boundKeys.isEmpty()) "Add key" else "Add another")
-        }
-
+        // The capture box replaces the button while capturing. Rendering both at once made the
+        // row wider than its allotted width and clipped the "Add key" button out of view.
         if (isCapturing) {
-            // Invisible capture box
             BoxWithKeyCapture(
                 onKeyCaptured = onKeyCaptured,
                 onCancel = onCaptureCancel
             )
+        } else {
+            Button(onClick = onAddKeyClick) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(if (boundKeys.isEmpty()) "Add key" else "Add another")
+            }
         }
     }
 }
