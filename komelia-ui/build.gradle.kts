@@ -140,3 +140,12 @@ kotlin {
         }
     }
 }
+
+// The root project's buildEpubReaders task copies komga.html/ttsu.html into
+// src/commonMain/composeResources/files/, which is also the source directory
+// read by Compose's resource-copy tasks. Gradle 9.x strict validation fails
+// if one task's output is consumed by another without a declared dependency,
+// so wire the dependency explicitly.
+tasks.matching { it.name.contains("ResourcesForCommonMain") }.configureEach {
+    dependsOn(":buildEpubReaders")
+}
