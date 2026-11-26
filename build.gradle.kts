@@ -403,18 +403,21 @@ tasks.register("desktopRun") {
 tasks.register("desktopJar") {
     description = "create release jar for current OS"
     group = "komelia-package"
+    dependsOn("buildEpubReaders")
     dependsOn(projects.komeliaApp.desktopApp.path + ":packageReleaseUberJarForCurrentOS")
 }
 
 tasks.register("desktopDeb") {
     description = "create linux deb package"
     group = "komelia-package"
+    dependsOn("buildEpubReaders")
     dependsOn(projects.komeliaApp.desktopApp.path + ":packageReleaseDeb")
 }
 
 tasks.register("desktopMsi") {
     description = "create windows msi installer"
     group = "komelia-package"
+    dependsOn("buildEpubReaders")
     dependsOn(projects.komeliaApp.desktopApp.path + ":packageReleaseMsi")
 }
 

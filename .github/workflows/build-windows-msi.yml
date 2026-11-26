@@ -145,6 +145,11 @@ jobs:
           java-version: '21'
 
       - name: Build Windows MSI
+        # desktopMsi depends on buildEpubReaders which runs npm builds for the
+        # epub reader web UIs. NPM_CONFIG_ALLOW_GIT is required: komga-webui
+        # depends on @d-i-t-a/reader, which is pinned to a github: URL.
+        env:
+          NPM_CONFIG_ALLOW_GIT: all
         run: ./gradlew.bat --no-configuration-cache :desktopMsi
 
       - name: Find MSI file
